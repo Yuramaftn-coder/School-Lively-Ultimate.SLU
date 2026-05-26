@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Lively Quantum - Écosystème Éducatif Connecté</title>
+    <style>
+        :root {
+            --pronote-dark: #1e272e;
+            --pronote-green: #27ae60;
+            --logo-light: #8cc63f;
+            --logo-dark: #005826;
+            --pronote-bg: #f5f6fa;
+            --pronote-border: #ced6e0;
+            --text-main: #2f3542;
+            --accent-danger: #e74c3c;
+            --accent-warn: #f39c12;
+            --accent-blue: #2980b9;
+            --accent-purple: #8e44ad;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--pronote-bg);
+            color: var(--text-main);
+        }
+
+        /* --- LOGO CONCEPT --- */
+        .logo-container { display: flex; align-items: center; gap: 12px; }
+        .sl-logo-orbit {
+            position: relative; width: 45px; height: 45px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sl-logo-text {
+            font-size: 24px; font-weight: 900; font-style: italic;
+            color: var(--logo-light); position: relative; z-index: 2; letter-spacing: -2px;
+        }
+        .sl-logo-orbit::after {
+            content: ''; position: absolute; width: 50px; height: 22px;
+            border: 4px solid var(--logo-dark); border-radius: 50%;
+            transform: rotate(-25deg); z-index: 1; box-sizing: border-box;
+        }
+
+        /* --- STRUCTURE & CONTAINER --- */
+        #auth-screen {
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; background: linear-gradient(135deg, var(--pronote-dark) 0%, #2f3542 100%);
+        }
+        .auth-box { background: white; padding: 35px; border-radius: 12px; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .auth-toggle { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--pronote-bg); }
+        .auth-toggle button { flex: 1; padding: 12px; background: none; border: none; font-weight: bold; cursor: pointer; color: #747d8c; }
+        .auth-toggle button.active { color: var(--pronote-green); border-bottom: 2px solid var(--pronote-green); }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        #app-interface { display: none; flex-direction: column; height: 100vh; }
+        header { background-color: var(--pronote-dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        nav { background-color: #2f3542; display: flex; overflow-x: auto; white-space: nowrap; }
+        .nav-tab { color: #f5f6fa; padding: 14px 20px; cursor: pointer; font-size: 13px; border-bottom: 3px solid transparent; }
+        .nav-tab:hover, .nav-tab.active { background-color: #485460; border-bottom: 3px solid var(--pronote-green); }
+
+        .container { flex: 1; padding: 25px; overflow-y: auto; }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .grid-dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        @media (max-width: 992px) { .grid-dashboard { grid-template-columns: 1fr; } }
+        
+        .card { background: var(--card-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--pronote-border); margin-bottom: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .card h3 { margin-top: 0; border-bottom: 2px solid #f1f2f6; padding-bottom: 10px; color: var(--pronote-dark); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--card-bg); font-size: 14px; }
+        table th, table td { border: 1px solid var(--pronote-border); padding: 10px; text-align: left; }
+        table th { background-color: #f8f9fa; }
+
+        /* --- CHAT COMPONENT --- */
+        .chat-box { border: 1px solid var(--pronote-border); border-radius: 6px; height: 200px; overflow-y: auto; padding: 10px; background: #fafafa; margin-bottom: 10px; }
+        .chat-msg { margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
+        .chat-msg .author { font-weight: bold; color: var(--accent-blue); }
+        .chat-msg .tag-prof { background: var(--accent-danger); color: white; padding: 1px 4px; border-radius: 3px; font-size: 10px; margin-right: 4px; }
+
+        /* --- INTERACTIVE GRID FOR SEATING PLAN --- */
+        .seating-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
+        .desk-card { border: 2px dashed var(--pronote-border); padding: 15px; text-align: center; background: #fdfefe; border-radius: 6px; }
+
+        /* --- UI COMPONENTS --- */
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid var(--pronote-border); border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; display: inline-block; }
+        .btn-success { background: var(--pronote-green); }
+        .btn-danger { background: var(--accent-danger); }
+        .btn-blue { background: var(--accent-blue); }
+        .btn-warn { background: var(--accent-warn); }
+        .btn-purple { background: var(--accent-purple); }
+        .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 11px; font-weight: bold; display: inline-block; }
+        
+        .mood-btn { padding: 10px; font-size: 20px; cursor: pointer; border: 1px solid var(--pronote-border); border-radius: 8px; background: white; transition: 0.2s; }
+        .mood-btn:hover, .mood-btn.active { background: #dff9fb; border-color: var(--accent-blue); }
+        .pref-list { font-size: 11px; background: #f1f2f6; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px dashed #ced6e0; max-height: 120px; overflow-y: auto; }
+        .store-item { border: 1px solid var(--pronote-border); padding: 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="auth-box">
+            <div style="display: flex; justify-content: center; margin-bottom: 15px;">
+                <div class="logo-container">
+                    <div class="sl-logo-orbit"><span class="sl-logo-text">SL</span></div>
+                    <span style="font-size: 22px; font-weight: bold; color: var(--pronote-dark);">SCHOOL LIVELY</span>
+                </div>
+            </div>
+            
+            <div class="auth-toggle">
+                <button id="btn-tab-login" class="active" onclick="toggleAuthTab('login')">Connexion</button>
+                <button id="btn-tab-register" onclick="toggleAuthTab('register')">Créer un compte</button>
+            </div>
+
+            <div class="pref-list">
+                <strong>💡 Simulation Comptes d'Établissement :</strong><br>
+                • <u>Profs (8)</u> : <code>m.vasseur</code> (Maths), <code>mme.dupont</code> (Histoire), <code>mme.robert</code> (Français)...<br>
+                • <u>Élèves (24)</u> : 3A (<code>m.dupuis</code>), 3B (<code>c.petit</code>), 3C (<code>a.leclerc</code>), 3D (<code>e.roux</code>)...
+            </div>
+
+            <div id="form-login" class="auth-form active">
+                <label>Identifiant Compte :</label>
+                <input type="text" id="login-username" placeholder="Saisissez votre identifiant..." value="m.vasseur">
+                <button class="btn btn-success" style="width:100%;" onclick="actionConnexion()">Se connecter au Hub</button>
+            </div>
+
+            <div id="form-register" class="auth-form">
+                <label>Nom et Prénom :</label>
+                <input type="text" id="reg-fullname" placeholder="Ex: Lucas Gomez">
+                <label>Identifiant unique :</label>
+                <input type="text" id="reg-username" placeholder="Ex: l.gomez">
+                <label>Rôle Académique :</label>
+                <select id="reg-role" onchange="document.getElementById('box-matiere-ins').style.display = (this.value==='prof')?'block':'none'">
+                    <option value="eleve">Élève de 3ème</option>
+                    <option value="prof">Enseignant / Professeur</option>
+                </select>
+                
+                <div id="box-matiere-ins" style="display: none;">
+                    <label>Matière enseignée :</label>
+                    <select id="reg-matiere">
+                        <option value="Mathématiques">Mathématiques</option>
+                        <option value="Histoire-Géo">Histoire-Géo</option>
+                        <option value="Physique-Chimie">Physique-Chimie</option>
+                        <option value="Français">Français</option>
+                        <option value="Anglais">Anglais</option>
+                        <option value="SVT">SVT</option>
+                        <option value="Arts Plastiques">Arts Plastiques</option>
+                        <option value="Technologie">Technologie</option>
+                    </select>
+                </div>
+                <button class="btn btn-blue" style="width:100%;" onclick="actionInscription()">Finaliser l'inscription</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-interface">
+        <header>
+            <div class="logo-container">
+                <div class="sl-logo-orbit"><span class="sl-logo-text">SL</span></div>
+                <h1 style="margin:0; font-size: 18px; color: white; font-weight: 800;">SCHOOL LIVELY</h1>
+            </div>
+            <div>
+                <span id="user-display-info" style="margin-right: 20px; font-weight: 600;"></span>
+                <button class="btn btn-danger" style="padding: 5px 10px; font-size: 11px;" onclick="actionDeconnexion()">Déconnexion</button>
+            </div>
+        </header>
+
+        <nav id="navbar-slots"></nav>
+
+        <div class="container">
+            
+            <div id="v-eleve-accueil" class="view">
+                <div class="grid-dashboard">
+                    <div>
+                        <div class="card">
+                            <h3>🧠 Météo Émotionnelle du Jour</h3>
+                            <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 10px;">
+                                <button class="mood-btn" onclick="soumettreHumeur('🚀 Top')">🚀 Top</button>
+                                <button class="mood-btn" onclick="soumettreHumeur('🙂 Allez, ça va')">🙂 Ça va</button>
+                                <button class="mood-btn" onclick="soumettreHumeur('🥱 Fatigué(e)')">🥱 Fatigué</button>
+                                <button class="mood-btn" onclick="soumettreHumeur('😰 Stressé(e)')">😰 Stressé</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>💬 Canal Réseau Direct de la Classe</h3>
+                            <div class="chat-box" id="box-chat-messages-eleve"></div>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="input-chat-eleve" placeholder="Écrire dans le canal..." style="margin:0;">
+                                <button class="btn btn-blue" onclick="envoyerMessageChat()">Diffuser</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <h3>🏆 Distinctions & Crédits Scolaires</h3>
+                            <div style="margin-bottom: 12px;">📈 Points de Mérite Disponibles : <b id="lbl-solde-points" style="color:var(--pronote-green); font-size:18px;">0</b> pts</div>
+                            <div id="box-badges-eleve" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="v-eleve-devoirs" class="view">
+                <div class="card">
+                    <h3>📅 Travaux Spécifiques à Réaliser</h3>
+                    <table>
+                        <thead><tr><th>Discipline Enseignée</th><th>Détail des Consignes</th><th>Statut de Validation</th></tr></thead>
+                        <tbody id="box-devoirs-eleve"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-eleve-notes" class="view">
+                <div class="card">
+                    <h3>📊 Relevé National des Notes Semestrielles</h3>
+                    <table>
+                        <thead><tr><th>Matière</th><th>Liste des Notes</th><th>Moyenne Générale</th></tr></thead>
+                        <tbody id="box-notes-eleve"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-eleve-qcm" class="view">
+                <div class="card">
+                    <h3>⚡ Évaluation Flash en Direct</h3>
+                    <div id="box-qcm-actif-eleve">
+                        <p style="color:gray; font-style:italic;">Aucun test flash n'est actuellement lancé par vos professeurs.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="v-eleve-boutique" class="view">
+                <div class="card">
+                    <h3>🛒 Récompenses de Mérite (Foyer Universitaire)</h3>
+                    <p>Dépensez vos points durement acquis en participant activement en classe !</p>
+                    <div id="box-boutique-items"></div>
+                </div>
+            </div>
+
+            <div id="v-eleve-sante" class="view">
+                <div class="card">
+                    <h3>🩺 Suivi Médical & Déclaration d'Incident</h3>
+                    <label>Signaler une indisposition immédiate :</label>
+                    <select id="input-sante-motif">
+                        <option value="Migraine / Maux de tête">Migraine / Maux de tête</option>
+                        <option value="Blessure légère (Sport)">Blessure légère (Sport)</option>
+                        <option value="Fatigue extrême / Vertiges">Fatigue extrême / Vertiges</option>
+                    </select>
+                    <button class="btn btn-purple" onclick="soumettreVisiteInfirmerie()">Envoyer un ticket à l'Infirmerie</button>
+                    <h4 style="margin-top:20px;">Historique des consultations</h4>
+                    <table id="table-sante-historique">
+                        <thead><tr><th>Date</th><th>Motif Déclaré</th><th>Statut Prise en Charge</th></tr></thead>
+                        <tbody id="box-sante-historique"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-prof-appel" class="view">
+                <div class="card">
+                    <h3>🔴 Feuille d'Émargement et d'Appel Journalier</h3>
+                    <label>Sélectionner la division :</label>
+                    <select id="select-classe-prof" onchange="renduDonnees()"></select>
+                    <table>
+                        <thead><tr><th>Élève</th><th>Compteurs Globaux</th><th>Actions Présence</th><th>Système Gratification</th></tr></thead>
+                        <tbody id="box-appel-prof"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-prof-saisie" class="view">
+                <div class="card">
+                    <h3>📝 Saisie Instantanée des Notes</h3>
+                    <form onsubmit="profValiderNote(event)">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                            <select id="select-classe-note" onchange="profMettreAJourFiltreEleves()"></select>
+                            <select id="select-eleve-note"></select>
+                        </div>
+                        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:15px;">
+                            <input type="number" id="input-note-valeur" min="0" max="20" step="0.25" placeholder="Note obtenue /20" required style="margin:0;">
+                            <button type="submit" class="btn btn-success">Enregistrer au Bulletin</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>📅 Assignation de Travaux (Cahier de Textes)</h3>
+                    <input type="text" id="input-prof-devoir" placeholder="Énoncé du travail à réaliser..." style="margin-bottom:10px;">
+                    <button class="btn btn-blue" onclick="profPublierDevoir()">Diffuser aux Élèves</button>
+                </div>
+            </div>
+
+            <div id="v-prof-plan" class="view">
+                <div class="card">
+                    <h3>🪑 Plan de Disposition de la Salle de Cours</h3>
+                    <p>Visualisation spatiale des tables pour la classe sélectionnée.</p>
+                    <div class="seating-grid" id="box-plan-classe-tables"></div>
+                </div>
+            </div>
+
+            <div id="v-prof-qcm" class="view">
+                <div class="card">
+                    <h3>⚡ Lancement d'un Test de Connaissances Flash</h3>
+                    <label>Question à soumettre instantanément :</label>
+                    <input type="text" id="input-qcm-question" value="Quelle est la capitale historique de l'Empire Romain ?">
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                        <input type="text" id="input-qcm-a" value="A) Rome">
+                        <input type="text" id="input-qcm-b" value="B) Carthage">
+                    </div>
+                    <label>Bonne réponse attendue :</label>
+                    <select id="select-qcm-reponse">
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                    </select>
+                    <button class="btn btn-purple" onclick="profLancerQCM()">Déclencher le Test sur les Écrans Élèves</button>
+                    <button class="btn btn-danger" onclick="profArreterQCM()">Clôturer l'Évaluation</button>
+                    
+                    <h4 style="margin-top:25px;">Statistiques des réponses en temps réel :</h4>
+                    <div id="box-qcm-stats" style="background:#f8f9fa; padding:15px; border-radius:6px; border:1px solid var(--pronote-border);"></div>
+                </div>
+            </div>
+
+            <div id="v-prof-meteo" class="view">
+                <div class="card">
+                    <h3>📊 Climat Scolaire & Météo Interne</h3>
+                    <div id="box-meteo-classe" style="font-size:15px; line-height:1.8;"></div>
+                </div>
+            </div>
+
+            <div id="v-prof-chat" class="view">
+                <div class="card">
+                    <h3>💬 Modération & Envoi de Consignes Officielles</h3>
+                    <div class="chat-box" id="box-chat-messages-prof"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="input-chat-prof" placeholder="Écrire une annonce importante..." style="margin:0;">
+                        <button class="btn btn-danger" onclick="envoyerMessageChatProf()">Annoncer</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="v-commun-edt" class="view">
+                <div class="card">
+                    <h3>📅 Organisation de la Semaine Académique</h3>
+                    <table>
+                        <thead><tr><th>Heures</th><th>Lundi</th><th>Mardi</th><th>Mercredi</th><th>Jeudi</th><th>Vendredi</th></tr></thead>
+                        <tbody>
+                            <tr><td>08h15 - 10h15</td><td style="background:#dff9fb;">Mathématiques (S.201)</td><td style="background:#f6e58d;">Français (S.102)</td><td style="background:#ffbe76;">Histoire-Géo (S.112)</td><td style="background:#ffb8b8;">Anglais (S.205)</td><td style="background:#badc58;">EPS (Gymnase)</td></tr>
+                            <tr><td>10h30 - 12h30</td><td style="background:#ffbe76;">Histoire-Géo (S.112)</td><td style="background:#badc58;">SVT (Labo Bio)</td><td style="background:#c7ecee;">Accompagnement Perso</td><td style="background:#dff9fb;">Mathématiques (S.201)</td><td style="background:#f6e58d;">Français (S.102)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-commun-cantine" class="view">
+                <div class="card">
+                    <h3>🍽️ Menu du Jour & Évaluation de la Restauration</h3>
+                    <div style="background:#f9f9f9; padding:15px; border-radius:8px; border-left:4px solid var(--pronote-green); margin-bottom:15px;">
+                        <strong>Entrée :</strong> Salade de tomates bio et mozzarella<br>
+                        <strong>Plat Principal :</strong> Filet de colin sauce citronnée ou Cordon bleu, frites maison<br>
+                        <strong>Dessert :</strong> Tarte fine aux pommes d'Anjou
+                    </div>
+                    <label>Avis des usagers de la table (Notez le repas) :</label>
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button class="btn btn-warn" onclick="voterCantine(1)">⭐ 1/5</button>
+                        <button class="btn btn-warn" onclick="voterCantine(3)">⭐⭐3/5</button>
+                        <button class="btn btn-warn" onclick="voterCantine(5)">⭐⭐⭐⭐⭐ 5/5</button>
+                    </div>
+                    <p style="margin-top:15px; font-size:13px; color:gray;">Moyenne actuelle des suffrages : <b id="lbl-cantine-score">4.2</b> / 5 ★</p>
+                </div>
+            </div>
+
+            <div id="v-commun-cdi" class="view">
+                <div class="card">
+                    <h3>📚 Catalogue Numérique du CDI</h3>
+                    <p>Consultez les ouvrages et réservez-les instantanément pour vos dossiers de recherche.</p>
+                    <div id="box-cdi-livres"></div>
+                </div>
+            </div>
+
+            <div id="v-commun-cvc" class="view">
+                <div class="card">
+                    <h3>🗳️ Délibérations du Conseil de la Vie Collégienne (CVC)</h3>
+                    <div id="box-liste-cvc"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // INJECTION INTEGRALE SANS PERTE DE LA BASE DE DONNEES PROF/ELEVE
+        if (!localStorage.getItem('sl_comptes_v6')) {
+            localStorage.setItem('sl_comptes_v6', JSON.stringify([
+                // 8 ENSEIGNANTS CONFIGURÉS
+                { username: "m.vasseur", fullname: "M. Vasseur", role: "prof", matiere: "Mathématiques", classe: "Toutes" },
+                { username: "mme.dupont", fullname: "Mme. Dupont", role: "prof", matiere: "Histoire-Géo", classe: "Toutes" },
+                { username: "m.legrand", fullname: "M. Legrand", role: "prof", matiere: "Physique-Chimie", classe: "Toutes" },
+                { username: "mme.robert", fullname: "Mme. Robert", role: "prof", matiere: "Français", classe: "Toutes" },
+                { username: "m.martinez", fullname: "M. Martinez", role: "prof", matiere: "Anglais", classe: "Toutes" },
+                { username: "mme.simon", fullname: "Mme. Simon", role: "prof", matiere: "SVT", classe: "Toutes" },
+                { username: "m.dubois", fullname: "M. Dubois", role: "prof", matiere: "Arts Plastiques", classe: "Toutes" },
+                { username: "mme.gautier", fullname: "Mme. Gautier", role: "prof", matiere: "Technologie", classe: "Toutes" },
+
+                // 24 ÉLÈVES RÉPARTIS EQUITABLEMENT (6 par division)
+                { username: "m.dupuis", fullname: "Maxime Dupuis", role: "eleve", classe: "3ème A", humeur: "🚀 Top", badges: ["🥇 Major", "🤝 Tuteur"], absent: 0, retard: 0, pointsMerite: 40 },
+                { username: "l.renard", fullname: "Lucas Renard", role: "eleve", classe: "3ème A", humeur: "🙂 Allez, ça va", badges: ["🧠 Curieux"], absent: 1, retard: 0, pointsMerite: 20 },
+                { username: "a.dubois", fullname: "Amandine Dubois", role: "eleve", classe: "3ème A", humeur: "🚀 Top", badges: [], absent: 0, retard: 2, pointsMerite: 0 },
+                { username: "j.martin", fullname: "Julien Martin", role: "eleve", classe: "3ème A", humeur: "🥱 Fatigué(e)", badges: [], absent: 2, retard: 1, pointsMerite: 0 },
+                { username: "s.legrand", fullname: "Sarah Legrand", role: "eleve", classe: "3ème A", humeur: "😰 Stressé(e)", badges: ["🎨 Créatif"], absent: 0, retard: 0, pointsMerite: 20 },
+                { username: "n.guerin", fullname: "Nicolas Guerin", role: "eleve", classe: "3ème A", humeur: "🙂 Allez, ça va", badges: [], absent: 0, retard: 0, pointsMerite: 0 },
+
+                { username: "c.petit", fullname: "Chloé Petit", role: "eleve", classe: "3ème B", humeur: "🥱 Fatigué(e)", badges: ["🎨 Créatif"], absent: 0, retard: 1, pointsMerite: 20 },
+                { username: "t.moreau", fullname: "Thomas Moreau", role: "eleve", classe: "3ème B", humeur: "🚀 Top", badges: ["🥇 Major"], absent: 0, retard: 0, pointsMerite: 20 },
+                { username: "m.fournier", fullname: "Manon Fournier", role: "eleve", classe: "3ème B", humeur: "🙂 Allez, ça va", badges: [], absent: 1, retard: 3, pointsMerite: 0 },
+                { username: "l.garcia", fullname: "Léo Garcia", role: "eleve", classe: "3ème B", humeur: "😰 Stressé(e)", badges: [], absent: 0, retard: 0, pointsMerite: 0 },
+                { username: "e.bonnet", fullname: "Emma Bonnet", role: "eleve", classe: "3ème B", humeur: "🚀 Top", badges: ["🤝 Tuteur"], absent: 0, retard: 0, pointsMerite: 20 },
+                { username: "a.rousseau", fullname: "Antoine Rousseau", role: "eleve", classe: "3ème B", humeur: "🥱 Fatigué(e)", badges: [], absent: 3, retard: 0, pointsMerite: 0 },
+
+                { username: "a.leclerc", fullname: "Arthur Leclerc", role: "eleve", classe: "3ème C", humeur: "🚀 Top", badges: ["🧠 Curieux"], absent: 0, retard: 0, pointsMerite: 20 },
+                { username: "o.lefevre", fullname: "Olivia Lefevre", role: "eleve", classe: "3ème C", humeur: "😰 Stressé(e)", badges: [], absent: 0, retard: 1, pointsMerite: 0 },
+                { username: "h.vincent", fullname: "Hugo Vincent", role: "eleve", classe: "3ème C", humeur: "🙂 Allez, ça va", badges: [], absent: 1, retard: 0, pointsMerite: 0 },
+                { username: "l.bertrand", fullname: "Léa Bertrand", role: "eleve", classe: "3ème C", humeur: "🥱 Fatigué(e)", badges: ["🎨 Créatif"], absent: 0, retard: 4, pointsMerite: 20 },
+                { username: "v.marchand", fullname: "Valentin Marchand", role: "eleve", classe: "3ème C", humeur: "🚀 Top", badges: [], absent: 0, retard: 0, pointsMerite: 0 },
+                { username: "c.colin", fullname: "Camille Colin", role: "eleve", classe: "3ème C", humeur: "🙂 Allez, ça va", badges: ["🤝 Tuteur"], absent: 2, retard: 0, pointsMerite: 20 },
+
+                { username: "e.roux", fullname: "Élodie Roux", role: "eleve", classe: "3ème D", humeur: "🙂 Allez, ça va", badges: [], absent: 0, retard: 0, pointsMerite: 0 },
+                { username: "p.david", fullname: "Pierre David", role: "eleve", classe: "3ème D", humeur: "🥱 Fatigué(e)", badges: [], absent: 4, retard: 2, pointsMerite: 0 },
+                { username: "m.jacquet", fullname: "Mathilde Jacquet", role: "eleve", classe: "3ème D", humeur: "🚀 Top", badges: ["🥇 Major", "🧠 Curieux"], absent: 0, retard: 0, pointsMerite: 40 },
+                { username: "r.michel", fullname: "Romain Michel", role: "eleve", classe: "3ème D", humeur: "😰 Stressé(e)", badges: [], absent: 1, retard: 0, pointsMerite: 0 },
+                { username: "l.thomas", fullname: "Lucie Thomas", role: "eleve", classe: "3ème D", humeur: "🚀 Top", badges: ["🤝 Tuteur"], absent: 0, retard: 0, pointsMerite: 20 },
+                { username: "k.fleury", fullname: "Kévin Fleury", role: "eleve", classe: "3ème D", humeur: "🥱 Fatigué(e)", badges: [], absent: 0, retard: 1, pointsMerite: 0 }
+            ]));
+        }
+
+        // INITIALISATION DES AUTRES BASES FICTIVES SI NON EXISTANTES
+        if(!localStorage.getItem('sl_notes_v6')) localStorage.setItem('sl_notes_v6', JSON.stringify([{username:"m.dupuis", matiere:"Mathématiques", note:16}]));
+        if(!localStorage.getItem('sl_chat_v6')) localStorage.setItem('sl_chat_v6', JSON.stringify([{classe:"3ème A", auteur:"M. Vasseur", texte:"Bonjour à tous.", estProf:true}]));
+        if(!localStorage.getItem('sl_cvc_v6')) localStorage.setItem('sl_cvc_v6', JSON.stringify([{id:1, texte:"Installer un canapé au foyer", votes:32}]));
+        if(!localStorage.getItem('sl_devoirs_v6')) localStorage.setItem('sl_devoirs_v6', JSON.stringify([{classe:"3ème A", matiere:"Mathématiques", texte:"Exercices page 44"}]));
+        if(!localStorage.getItem('sl_cdi_v6')) localStorage.setItem('sl_cdi_v6', JSON.stringify([
+            {id:101, titre:"Les Misérables - Victor Hugo", dispo:true, emprunteur:null},
+            {id:102, titre:"Dune - Frank Herbert", dispo:true, emprunteur:null},
+            {id:103, titre:"Le Cid - Corneille", dispo:false, emprunteur:"Lucas Renard"}
+        ]));
+        if(!localStorage.getItem('sl_sante_v6')) localStorage.setItem('sl_sante_v6', JSON.stringify([]));
+        if(!localStorage.getItem('sl_qcm_v6')) localStorage.setItem('sl_qcm_v6', JSON.stringify({actif:false, question:"", optA:"", optB:"", repCorrecte:"", reponsesEleves:[]}));
+        if(!localStorage.getItem('sl_cantine_v6')) localStorage.setItem('sl_cantine_v6', JSON.stringify({notes:[4, 5, 4, 4]}));
+
+        let dbComptes = JSON.parse(localStorage.getItem('sl_comptes_v6'));
+        let dbNotes = JSON.parse(localStorage.getItem('sl_notes_v6'));
+        let dbChat = JSON.parse(localStorage.getItem('sl_chat_v6'));
+        let dbCvc = JSON.parse(localStorage.getItem('sl_cvc_v6'));
+        let dbDevoirs = JSON.parse(localStorage.getItem('sl_devoirs_v6'));
+        let dbCdi = JSON.parse(localStorage.getItem('sl_cdi_v6'));
+        let dbSante = JSON.parse(localStorage.getItem('sl_sante_v6'));
+        let dbQcm = JSON.parse(localStorage.getItem('sl_qcm_v6'));
+        let dbCantine = JSON.parse(localStorage.getItem('sl_cantine_v6'));
+        let currentSession = null;
+
+        function syncDB() {
+            localStorage.setItem('sl_comptes_v6', JSON.stringify(dbComptes));
+            localStorage.setItem('sl_notes_v6', JSON.stringify(dbNotes));
+            localStorage.setItem('sl_chat_v6', JSON.stringify(dbChat));
+            localStorage.setItem('sl_cvc_v6', JSON.stringify(dbCvc));
+            localStorage.setItem('sl_devoirs_v6', JSON.stringify(dbDevoirs));
+            localStorage.setItem('sl_cdi_v6', JSON.stringify(dbCdi));
+            localStorage.setItem('sl_sante_v6', JSON.stringify(dbSante));
+            localStorage.setItem('sl_qcm_v6', JSON.stringify(dbQcm));
+            localStorage.setItem('sl_cantine_v6', JSON.stringify(dbCantine));
+            renduDonnees();
+        }
+
+        function toggleAuthTab(tab) {
+            document.getElementById('btn-tab-login').classList.remove('active');
+            document.getElementById('btn-tab-register').classList.remove('active');
+            document.getElementById('form-login').classList.remove('active');
+            document.getElementById('form-register').classList.remove('active');
+            if(tab === 'login') {
+                document.getElementById('btn-tab-login').classList.add('active');
+                document.getElementById('form-login').classList.add('active');
+            } else {
+                document.getElementById('btn-tab-register').classList.add('active');
+                document.getElementById('form-register').classList.add('active');
+            }
+        }
+
+        function actionInscription() {
+            const fullname = document.getElementById('reg-fullname').value.trim();
+            const username = document.getElementById('reg-username').value.trim().toLowerCase();
+            const role = document.getElementById('reg-role').value;
+            const matiere = document.getElementById('reg-matiere').value;
+
+            if(!fullname || !username) return alert("Champs invalides.");
+            if(dbComptes.find(x => x.username === username)) return alert("Identifiant déjà réservé.");
+
+            let classeAttribuee = "Toutes";
+            if(role === 'eleve') {
+                const list = ["3ème A", "3ème B", "3ème C", "3ème D"];
+                let counts = { "3ème A": 0, "3ème B": 0, "3ème C": 0, "3ème D": 0 };
+                dbComptes.forEach(u => { if(u.role==='eleve') counts[u.classe]++; });
+                classeAttribuee = list.reduce((a, b) => counts[a] < counts[b] ? a : b);
+            }
+
+            dbComptes.push({ username, fullname, role, classe: classeAttribuee, matiere: role==='prof'?matiere:null, humeur: "🚀 Top", badges: [], absent: 0, retard: 0, pointsMerite: 0 });
+            syncDB();
+            alert("Compte déployé !");
+            toggleAuthTab('login');
+            document.getElementById('login-username').value = username;
+        }
+
+        function actionConnexion() {
+            const user = document.getElementById('login-username').value.trim().toLowerCase();
+            const account = dbComptes.find(u => u.username === user);
+            if(!account) return alert("Identifiant introuvable.");
+
+            currentSession = account;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-interface').style.display = 'flex';
+            
+            let label = currentSession.role === 'eleve' ? currentSession.classe : `Prof. de ${currentSession.matiere}`;
+            document.getElementById('user-display-info').innerText = `${currentSession.fullname} (${label})`;
+
+            genererTabs();
+            if(currentSession.role === 'prof') initialiserFiltresProf();
+            syncDB();
+        }
+
+        function actionDeconnexion() { currentSession = null; window.location.reload(); }
+
+        // GENERATEUR DE LA MATRICE MULTI-ONGLETS
+        function genererTabs() {
+            const nav = document.getElementById('navbar-slots');
+            if(currentSession.role === 'eleve') {
+                nav.innerHTML = `
+                    <div class="nav-tab active" onclick="navigate('v-eleve-accueil', this)">🏠 Accueil Network</div>
+                    <div class="nav-tab" onclick="navigate('v-eleve-devoirs', this)">📅 Cahier de Textes</div>
+                    <div class="nav-tab" onclick="navigate('v-eleve-notes', this)">📊 Notes & Bulletins</div>
+                    <div class="nav-tab" onclick="navigate('v-eleve-qcm', this)">⚡ Test Flash Live</div>
+                    <div class="nav-tab" onclick="navigate('v-eleve-boutique', this)">🛒 Boutique Foyer</div>
+                    <div class="nav-tab" onclick="navigate('v-eleve-sante', this)">🩺 Espace Santé</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-edt', this)">🕒 EdT</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cantine', this)">🍽️ Cantine</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cdi', this)">📚 CDI</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cvc', this)">🗳️ CVC</div>
+                `;
+                navigate('v-eleve-accueil');
+            } else {
+                nav.innerHTML = `
+                    <div class="nav-tab active" onclick="navigate('v-prof-appel', this)">🔴 Feuille d'Appel</div>
+                    <div class="nav-tab" onclick="navigate('v-prof-saisie', this)">📝 Notes & Devoirs</div>
+                    <div class="nav-tab" onclick="navigate('v-prof-plan', this)">🪑 Plan de Classe</div>
+                    <div class="nav-tab" onclick="navigate('v-prof-qcm', this)">⚡ Évaluation Flash</div>
+                    <div class="nav-tab" onclick="navigate('v-prof-meteo', this)">📊 Climat Scolaire</div>
+                    <div class="nav-tab" onclick="navigate('v-prof-chat', this)">💬 Canal Modérateur</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-edt', this)">🕒 EdT</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cantine', this)">🍽️ Cantine</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cdi', this)">📚 CDI</div>
+                    <div class="nav-tab" onclick="navigate('v-commun-cvc', this)">🗳️ CVC</div>
+                `;
+                navigate('v-prof-appel');
+            }
+        }
+
+        function navigate(id, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const frame = document.getElementById(id);
+            if(frame) frame.classList.add('active');
+            if(el) { document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); }
+        }
+
+        function initialiserFiltresProf() {
+            const arr = ["3ème A", "3ème B", "3ème C", "3ème D"];
+            document.getElementById('select-classe-prof').innerHTML = arr.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('select-classe-note').innerHTML = arr.map(c => `<option value="${c}">${c}</option>`).join('');
+            profMettreAJourFiltreEleves();
+        }
+
+        function profMettreAJourFiltreEleves() {
+            const cl = document.getElementById('select-classe-note').value;
+            const filtered = dbComptes.filter(u => u.role === 'eleve' && u.classe === cl);
+            document.getElementById('select-eleve-note').innerHTML = filtered.map(u => `<option value="${u.username}">${u.fullname}</option>`).join('');
+        }
+
+        /* --- LOGIQUE INTERACTIVE EXTENSION --- */
+        function soumettreHumeur(h) { currentSession.humeur = h; syncDB(); alert("Météo synchronisée !"); }
+        
+        function envoyerMessageChat() {
+            const txt = document.getElementById('input-chat-eleve').value.trim();
+            if(!txt) return;
+            dbChat.push({ classe: currentSession.classe, auteur: currentSession.fullname, texte: txt, estProf: false });
+            document.getElementById('input-chat-eleve').value = "";
+            syncDB();
+        }
+
+        function envoyerMessageChatProf() {
+            const cl = document.getElementById('select-classe-prof').value;
+            const txt = document.getElementById('input-chat-prof').value.trim();
+            if(!txt) return;
+            dbChat.push({ classe: cl, auteur: currentSession.fullname, texte: txt, estProf: true });
+            document.getElementById('input-chat-prof').value = "";
+            syncDB();
+        }
+
+        function profDonnerBadge(user, badgeName) {
+            const target = dbComptes.find(u => u.username === user);
+            if(target) {
+                if(!target.badges.includes(badgeName)) target.badges.push(badgeName);
+                target.pointsMerite = (target.pointsMerite || 0) + 20;
+                alert(`Badge +20 pts accordés à ${target.fullname}`);
+                syncDB();
+            }
+        }
+
+        function profSignaler(user, type) {
+            const target = dbComptes.find(u => u.username === user);
+            if(type==='abs') target.absent++;
+            if(type==='ret') target.retard++;
+            syncDB();
+        }
+
+        function profValiderNote(e) {
+            e.preventDefault();
+            const user = document.getElementById('select-eleve-note').value;
+            const val = parseFloat(document.getElementById('input-note-valeur').value);
+            if(!user) return;
+            dbNotes.push({ username: user, matiere: currentSession.matiere, note: val });
+            document.getElementById('input-note-valeur').value = "";
+            syncDB();
+        }
+
+        function profPublierDevoir() {
+            const cl = document.getElementById('select-classe-note').value;
+            const txt = document.getElementById('input-prof-devoir').value.trim();
+            if(!txt) return;
+            dbDevoirs.push({ classe: cl, matiere: currentSession.matiere, texte: txt });
+            document.getElementById('input-prof-devoir').value = "";
+            syncDB();
+        }
+
+        // ENGREnage INTERACTIFS COMPLEMENTAIRES
+        function voterCantine(note) {
+            dbCantine.notes.push(note);
+            alert("Avis envoyé au Chef de cuisine !");
+            syncDB();
+        }
+
+        function reserverLivre(id) {
+            const livre = dbCdi.find(l => l.id === id);
+            if(livre && livre.dispo) {
+                livre.dispo = false;
+                livre.empreinteur = currentSession.fullname;
+                alert(`Ouvrage réservé ! À récupérer sous 48h.`);
+                syncDB();
+            }
+        }
+
+        function soumettreVisiteInfirmerie() {
+            const motif = document.getElementById('input-sante-motif').value;
+            dbSante.push({ username: currentSession.username, date: "26/05/2026", motif: motif, statut: "⏳ Reçu - En attente de validation" });
+            alert("Demande de prise en charge transmise.");
+            syncDB();
+        }
+
+        function profLancerQCM() {
+            dbQcm.actif = true;
+            dbQcm.question = document.getElementById('input-qcm-question').value;
+            dbQcm.optA = document.getElementById('input-qcm-a').value;
+            dbQcm.optB = document.getElementById('input-qcm-b').value;
+            dbQcm.repCorrecte = document.getElementById('select-qcm-reponse').value;
+            dbQcm.reponsesEleves = [];
+            alert("Le QCM est projeté sur l'ensemble des interfaces élèves !");
+            syncDB();
+        }
+
+        function profArreterQCM() {
+            dbQcm.actif = false;
+            alert("Session d'évaluation clôturée.");
+            syncDB();
+        }
+
+        function repondreQCM(choix) {
+            if(dbQcm.reponsesEleves.find(r => r.username === currentSession.username)) return alert("Vous avez déjà soumis votre réponse !");
+            dbQcm.reponsesEleves.push({ username: currentSession.username, choix: choix });
+            alert("Réponse enregistrée avec succès !");
+            syncDB();
+        }
+
+        function acheterBoutique(nomItem, cout) {
+            if((currentSession.pointsMerite || 0) < cout) return alert("Crédit de points insuffisant.");
+            currentSession.pointsMerite -= cout;
+            alert(`Succès ! Vous avez obtenu votre : ${nomItem}. Code à présenter au Foyer.`);
+            syncDB();
+        }
+
+        function voterCVC(id) {
+            const item = dbCvc.find(x => x.id === id);
+            if(item) item.votes++;
+            syncDB();
+        }
+
+        /* --- REDYNAMISATION ET BLINDAGE DU RENDU GLOBAL --- */
+        function renduDonnees() {
+            if(!currentSession) return;
+
+            // EVALUATION SCORE CANTINE
+            let totalC = dbCantine.notes.reduce((a,b)=>a+b,0);
+            document.getElementById('lbl-cantine-score').innerText = (totalC / dbCantine.notes.length).toFixed(1);
+
+            // CATALOGUE CDI
+            const boxCDI = document.getElementById('box-cdi-livres');
+            if(boxCDI) {
+                boxCDI.innerHTML = dbCdi.map(l => `
+                    <div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                        <span>📖 <b>${l.titre}</b> ${l.dispo ? '' : '<span style="color:red;">(Emprunté par '+l.empreinteur+')</span>'}</span>
+                        ${l.dispo ? `<button class="btn btn-blue" style="padding:4px 8px; font-size:11px;" onclick="reserverLivre(${l.id})">Réserver</button>` : '<span class="badge btn-danger">Indisponible</span>'}
+                    </div>
+                `).join('');
+            }
+
+            // REUNIONS DU CVC
+            const boxCVC = document.getElementById('box-liste-cvc');
+            if(boxCVC) {
+                boxCVC.innerHTML = dbCvc.map(c => `
+                    <div style="font-size:13px; background:#f9f9f9; padding:8px; border-radius:4px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${c.texte} (<b>${c.votes} votes</b>)</span>
+                        <button class="btn btn-warn" style="padding:2px 6px; font-size:11px;" onclick="voterCVC(${c.id})">👍 +1</button>
+                    </div>
+                `).join('');
+            }
+
+            // RENDU EN MODE ELEVE
+            if(currentSession.role === 'eleve') {
+                if(document.getElementById('lbl-solde-points')) document.getElementById('lbl-solde-points').innerText = currentSession.pointsMerite || 0;
+                
+                // Chat Room
+                const boxC = document.getElementById('box-chat-messages-eleve');
+                if(boxC) {
+                    const msgs = dbChat.filter(m => m.classe === currentSession.classe);
+                    boxC.innerHTML = msgs.map(m => `<div class="chat-msg">${m.estProf?'<span class="tag-prof">OFFICIEL</span>':''}<span class="author">${m.auteur} :</span> ${m.texte}</div>`).join('');
+                    boxC.scrollTop = boxC.scrollHeight;
+                }
+
+                // Devoirs Table
+                const listD = dbDevoirs.filter(d => d.classe === currentSession.classe);
+                if(document.getElementById('box-devoirs-eleve')) {
+                    document.getElementById('box-devoirs-eleve').innerHTML = listD.map(d => `<tr><td><strong>${d.matiere}</strong></td><td>${d.texte}</td><td><span class="badge btn-success">En cours</span></td></tr>`).join('');
+                }
+
+                // Badges
+                const boxB = document.getElementById('box-badges-eleve');
+                if(boxB) {
+                    boxB.innerHTML = currentSession.badges && currentSession.badges.length > 0 ? 
+                        currentSession.badges.map(b => `<span class="badge btn-blue">⭐ ${b}</span>`).join('') : '<span style="color:gray;">Aucun insigne.</span>';
+                }
+
+                // Bulletin de Note Complexe
+                const boxN = document.getElementById('box-notes-eleve');
+                if(boxN) {
+                    boxN.innerHTML = "";
+                    ["Mathématiques", "Histoire-Géo", "Physique-Chimie", "Français", "Anglais", "SVT"].forEach(m => {
+                        const recs = dbNotes.filter(n => n.username === currentSession.username && n.matiere === m).map(n => n.note);
+                        let moy = recs.length ? (recs.reduce((a,b)=>a+b,0)/recs.length).toFixed(2)+" / 20" : "N/A";
+                        boxN.innerHTML += `<tr><td><strong>${m}</strong></td><td>${recs.length ? recs.map(x=>x+"/20").join(', ') : '---'}</td><td><span class="badge btn-success">${moy}</span></td></tr>`;
+                    });
+                }
+
+                // Boutique Foyer Récompenses
+                const boxStore = document.getElementById('box-boutique-items');
+                if(boxStore) {
+                    boxStore.innerHTML = `
+                        <div class="store-item"><span>🎫 <b>Pass Prioritaire Cantine (Une semaine)</b></span><button class="btn btn-purple" onclick="acheterBoutique('Pass Cantine', 40)">Débloquer (40 pts)</button></div>
+                        <div class="store-item"><span>☕ <b>Boisson chaude offerte au Foyer</b></span><button class="btn btn-purple" onclick="acheterBoutique('Café Foyer', 20)">Débloquer (20 pts)</button></div>
+                    `;
+                }
+
+                // Historique Infirmerie
+                const boxSante = document.getElementById('box-sante-historique');
+                if(boxSante) {
+                    const mesVisites = dbSante.filter(s => s.username === currentSession.username);
+                    boxSante.innerHTML = mesVisites.length ? mesVisites.map(s => `<tr><td>${s.date}</td><td>${s.motif}</td><td><span class="badge btn-warn">${s.statut}</span></td></tr>`).join('') : `<tr><td colspan="3" style="text-align:center; color:green;">Aucun incident à déplorer.</td></tr>`;
+                }
+
+                // Live QCM Screen
+                const boxQCM = document.getElementById('box-qcm-actif-eleve');
+                if(boxQCM) {
+                    if(dbQcm.actif) {
+                        const dejaRepondu = dbQcm.reponsesEleves.find(r => r.username === currentSession.username);
+                        boxQCM.innerHTML = `
+                            <div style="background:#f0f9ff; padding:15px; border-radius:6px; border:1px solid #bae6fd;">
+                                <h4>Question en cours : ${dbQcm.question}</h4>
+                                <div style="display:flex; gap:10px; margin-top:10px;">
+                                    <button class="btn btn-blue" onclick="repondreQCM('A')" ${dejaRepondu?'disabled':''}>${dbQcm.optA}</button>
+                                    <button class="btn btn-blue" onclick="repondreQCM('B')" ${dejaRepondu?'disabled':''}>${dbQcm.optB}</button>
+                                </div>
+                                ${dejaRepondu ? '<p style="color:green; margin-top:10px; font-weight:bold;">✓ Votre réponse a été transmise.</p>':''}
+                            </div>
+                        `;
+                    } else {
+                        boxQCM.innerHTML = `<p style="color:gray; font-style:italic;">Aucun test flash n'est actuellement lancé par vos professeurs.</p>`;
+                    }
+                }
+            }
+
+            // RENDU EN MODE ENSEIGNANT
+            if(currentSession.role === 'prof') {
+                const targetCl = document.getElementById('select-classe-prof').value;
+                const studentsCl = dbComptes.filter(u => u.role === 'eleve' && u.classe === targetCl);
+
+                // Live QCM Stats Panel
+                const boxStats = document.getElementById('box-qcm-stats');
+                if(boxStats) {
+                    if(dbQcm.actif) {
+                        let totalRep = dbQcm.reponsesEleves.length;
+                        let countA = dbQcm.reponsesEleves.filter(r => r.choix === 'A').length;
+                        let countB = dbQcm.reponsesEleves.filter(r => r.choix === 'B').length;
+                        boxStats.innerHTML = `
+                            <strong>Sondage actif :</strong> "${dbQcm.question}"<br>
+                            • Réponses Option A : <b>${countA}</b><br>
+                            • Réponses Option B : <b>${countB}</b><br>
+                            • Total participations : <b>${totalRep}</b>
+                        `;
+                    } else {
+                        boxStats.innerHTML = `<span style="color:gray;">Aucun test flash en cours de projection.</span>`;
+                    }
+                }
+
+                // Climat Émotionnel de Classe
+                const boxM = document.getElementById('box-meteo-classe');
+                if(boxM) {
+                    if(studentsCl.length === 0) {
+                        boxM.innerHTML = "Aucun élève enregistré.";
+                    } else {
+                        let tot = studentsCl.length;
+                        let t = studentsCl.filter(s => s.humeur === '🚀 Top').length;
+                        let s = studentsCl.filter(s => s.humeur === '😰 Stressé(e)').length;
+                        boxM.innerHTML = `<b>Analyse de synergie de groupe (${targetCl}) :</b><br>• Dynamiques / Prêts 🚀 : ${t} / ${tot}<br>• Épuisés / Stressés 😰 : ${s} / ${tot}`;
+                    }
+                }
+
+                // Plan de classe Visuel
+                const boxPlan = document.getElementById('box-plan-classe-tables');
+                if(boxPlan) {
+                    boxPlan.innerHTML = studentsCl.length ? studentsCl.map(s => `
+                        <div class="desk-card">
+                            <span style="font-size:24px;">🪑</span><br>
+                            <strong>${s.fullname}</strong><br>
+                            <span style="font-size:11px; color:gray;">Humeur: ${s.humeur || '❔'}</span>
+                        </div>
+                    `).join('') : '<p style="color:gray;">Sélectionnez une division pour générer le plan.</p>';
+                }
+
+                // Feuille d'Appel Avancée
+                if(document.getElementById('box-appel-prof')) {
+                    document.getElementById('box-appel-prof').innerHTML = studentsCl.map(s => `
+                        <tr>
+                            <td><strong>${s.fullname}</strong></td>
+                            <td>Abs : <b>${s.absent}</b> | Retards : <b>${s.retard}</b></td>
+                            <td>
+                                <button class="btn btn-danger" style="padding:3px 6px; font-size:11px;" onclick="profSignaler('${s.username}', 'abs')">🔴 Abs</button>
+                                <button class="btn btn-warn" style="padding:3px 6px; font-size:11px;" onclick="profSignaler('${s.username}', 'ret')">⏳ Retard</button>
+                            </td>
+                            <td>
+                                <button class="btn btn-blue" style="padding:3px 6px; font-size:11px;" onclick="profDonnerBadge('${s.username}', 'Méritant')">🏅 +20 pts</button>
+                                <button class="btn btn-success" style="padding:3px 6px; font-size:11px;" onclick="profDonnerBadge('${s.username}', 'Tuteur')">🤝 Tuteur</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Salon Chat Enseignant
+                const boxCP = document.getElementById('box-chat-messages-prof');
+                if(boxCP) {
+                    const msgsP = dbChat.filter(m => m.classe === targetCl);
+                    boxCP.innerHTML = msgsP.map(m => `<div class="chat-msg"><span class="author">${m.auteur} :</span> ${m.texte}</div>`).join('');
+                    boxCP.scrollTop = boxCP.scrollHeight;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
